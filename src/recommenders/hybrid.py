@@ -280,7 +280,10 @@ class RecommendationEngine:
     def load(cls, artifacts_dir: str = "artifacts") -> "RecommendationEngine":
         """Load fully assembled production RecommendationEngine."""
         p = Path(artifacts_dir)
+        if not p.is_absolute() and not p.exists() and (_PROJECT_ROOT / p).exists():
+            p = _PROJECT_ROOT / p
         id_builder = InteractionMatrixBuilder.load(str(p / "mappings" / "id_mappings.joblib")) if (p / "mappings" / "id_mappings.joblib").exists() else None
+
         popularity = PopularityRecommender.load(str(p / "models" / "popularity_model.joblib")) if (p / "models" / "popularity_model.joblib").exists() else None
         trending = TrendingRecommender.load(str(p / "models" / "trending_model.joblib")) if (p / "models" / "trending_model.joblib").exists() else None
         item_item = ItemItemRecommender.load(str(p / "models" / "item_item_model.joblib"), id_builder=id_builder) if (p / "models" / "item_item_model.joblib").exists() else None

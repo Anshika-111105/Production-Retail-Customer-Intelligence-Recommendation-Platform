@@ -30,7 +30,7 @@ def code_cell(code):
     }
 
 
-PATH_BOOTSTRAP = """import sys
+PATH_BOOTSTRAP = """import sys, os
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -40,7 +40,11 @@ _curr = Path('.').resolve()
 PROJECT_ROOT = _curr if (_curr / 'src').exists() else (_curr.parent if (_curr.parent / 'src').exists() else (_curr.parents[1] if len(_curr.parents) > 1 and (_curr.parents[1] / 'src').exists() else _curr))
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
+
+# Switch working directory to project root so all relative paths ('data/...', 'artifacts/...') resolve seamlessly
+os.chdir(PROJECT_ROOT)
 """
+
 
 
 def create_all_notebooks():

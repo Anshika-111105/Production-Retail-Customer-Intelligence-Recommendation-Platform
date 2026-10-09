@@ -20,14 +20,27 @@ logger = get_logger("data_loader")
 class DataLoader:
     """Configurable loader for raw retail datasets."""
 
-    def __init__(self, raw_events_path: str, raw_catalog_path: Optional[str] = None):
-        self.raw_events_path = Path(raw_events_path)
-        self.raw_catalog_path = Path(raw_catalog_path) if raw_catalog_path else None
+    def __init__(self, raw_events_path: Union[str, Path], raw_catalog_path: Optional[Union[str, Path]] = None):
+        self.raw_events_path = self._resolve_path(raw_events_path)
+        self.raw_catalog_path = self._resolve_path(raw_catalog_path)
+
+    @staticmethod
+    def _resolve_path(path: Optional[Union[str, Path]]) -> Optional[Path]:
+        """Resolve path relative to CWD or project root."""
+        if path is None:
+            return None
+        p = Path(path)
+        if p.exists():
+            return p
+        if not p.is_absolute() and (_PROJECT_ROOT / p).exists():
+            return _PROJECT_ROOT / p
+        return p
 
     def load_events(self) -> pd.DataFrame:
         """Load and normalize event log into standard schema."""
-        if not self.raw_events_path.exists():
+        if not self.raw_events_path or not self.raw_events_path.exists():
             raise FileNotFoundError(f"Events file not found: {self.raw_events_path}")
+
 
         logger.info(f"Loading raw interactions from {self.raw_events_path}...")
         if self.raw_events_path.suffix.lower() == ".parquet":
