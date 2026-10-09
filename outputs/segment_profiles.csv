@@ -1,0 +1,5 @@
+cluster_id,label,customer_count,percentage_of_customers,avg_recency_days,avg_frequency,avg_monetary_value,avg_order_value,avg_basket_size,avg_unique_products,avg_unique_categories,avg_category_diversity,avg_discount_usage_rate,avg_active_days,avg_repeat_purchase_rate
+3,High-Value Frequent Active Shoppers,1365,45.56,6.16,18.38,1482.91,230.68,1.0,16.19,5.06,1.739,0.027,16.85,0.104
+0,Low-Spend Dormant/At-Risk Shoppers,1134,37.85,36.5,5.56,356.22,127.59,1.01,5.36,2.67,1.485,0.0,5.43,0.032
+1,Low-Spend Dormant/At-Risk Shoppers,282,9.41,66.83,2.51,0.46,0.12,1.0,2.46,1.78,1.364,0.0,2.51,0.015
+2,Discount-Driven Shoppers,215,7.18,22.97,10.12,892.84,185.93,1.01,9.26,3.71,1.631,0.2,9.62,0.063

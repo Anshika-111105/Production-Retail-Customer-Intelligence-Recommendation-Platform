@@ -1,0 +1,43 @@
+# Customer RFM & K-Means Segmentation Configuration
+rfm:
+  reference_date_mode: "max_dataset_timestamp"
+  recency_unit: "days"
+  monetary_aggregation: "sum"
+  frequency_aggregation: "count_transactions_or_purchases"
+  transformations:
+    recency: "log1p"
+    frequency: "log1p"
+    monetary: "log1p"
+    avg_order_value: "log1p"
+    avg_basket_size: "none"
+    unique_products: "log1p"
+    unique_categories: "none"
+    category_diversity: "none"
+    discount_usage_rate: "none"
+    active_days: "log1p"
+
+clustering:
+  algorithm: "kmeans"
+  k_search_range: [2, 3, 4, 5, 6, 7, 8]
+  default_k: 4
+  init: "k-means++"
+  n_init: 20
+  max_iter: 300
+  random_state: 42
+  scaler: "robust" # "robust" or "standard"
+  pca_components: 2
+
+profiling:
+  percentiles: [0.25, 0.50, 0.75]
+  metrics:
+    - recency
+    - frequency
+    - monetary_value
+    - average_order_value
+    - average_basket_size
+    - unique_products
+    - unique_categories
+    - category_diversity
+    - discount_usage_rate
+    - active_days
+    - repeat_purchase_rate

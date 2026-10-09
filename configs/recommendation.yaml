@@ -1,0 +1,77 @@
+# Recommender Models and Hybrid Engine Configuration
+interactions:
+  event_weights:
+    purchase: 5.0
+    add_to_cart: 3.0
+    wishlist: 2.0
+    view: 1.0
+  damping_formula: "event_weight * log1p(count)"
+  normalize_per_user: false
+
+popularity:
+  alpha_unique_customers: 0.5
+  beta_recent_purchases: 1.0
+  recent_window_days: 30
+
+trending:
+  decay_lambda: 0.05 # exp(-0.05 * age_days) -> half-life ~14 days
+
+item_item:
+  similarity_metric: "cosine"
+  k_nearest_items: 50
+  min_similarity_threshold: 0.01
+
+als:
+  factors: 64
+  regularization: 0.05
+  iterations: 20
+  alpha_confidence: 40.0
+  random_state: 42
+
+svd:
+  n_components: 32
+  random_state: 42
+
+content_based:
+  tfidf_max_features: 500
+  categorical_features: ["category", "brand"]
+  numerical_features: ["unit_price"]
+  text_features: ["description"]
+
+cold_start:
+  sparse_user_threshold: 3 # <= 3 interactions is sparse
+  fallback_strategy: "popularity_trending_blend"
+
+hybrid:
+  candidate_pools:
+    als_top_k: 50
+    item_item_top_k: 50
+    segment_top_k: 30
+    popularity_top_k: 30
+    trending_top_k: 20
+  normalization_method: "min_max" # "min_max" or "z_score"
+  weights:
+    als: 0.35
+    item_similarity: 0.25
+    segment: 0.20
+    popularity: 0.10
+    trending: 0.10
+
+business_rules:
+  filter_already_purchased: true
+  filter_out_of_stock: true
+  enforce_category_filter: false
+  enforce_price_filter: false
+
+evaluation:
+  k_list: [5, 10, 20]
+  default_k: 10
+  metrics:
+    - precision
+    - recall
+    - hit_rate
+    - map
+    - ndcg
+    - catalog_coverage
+    - intra_list_diversity
+    - novelty

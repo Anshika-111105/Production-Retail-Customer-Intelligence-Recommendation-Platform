@@ -1,0 +1,5 @@
+model,eval_users,precision@5,recall@5,hit_rate@5,map@5,ndcg@5,precision@10,recall@10,hit_rate@10,map@10,ndcg@10,precision@20,recall@20,hit_rate@20,map@20,ndcg@20,diversity@10,novelty@10,catalog_coverage,segment_id,segment_label
+Segment 0: Low-Spend Dormant/At-Risk Shoppers,464,0.0366,0.1071,0.1724,0.0846,0.102,0.0274,0.1653,0.2414,0.0909,0.1201,0.0196,0.2305,0.3276,0.0956,0.1384,0.5711,16.6096,1.0,0,Low-Spend Dormant/At-Risk Shoppers
+Segment 1: Low-Spend Dormant/At-Risk Shoppers,49,0.0163,0.0578,0.0816,0.0493,0.0548,0.0163,0.0986,0.1429,0.0552,0.0703,0.0133,0.1769,0.2449,0.0597,0.0902,0.6222,16.6096,0.6388,1,Low-Spend Dormant/At-Risk Shoppers
+Segment 2: Discount-Driven Shoppers,139,0.0273,0.0602,0.1295,0.0472,0.0623,0.0223,0.1068,0.2014,0.0535,0.0795,0.0187,0.1919,0.3165,0.0602,0.104,0.5979,16.6096,0.925,2,Discount-Driven Shoppers
+Segment 3: High-Value Frequent Active Shoppers,1199,0.0642,0.0667,0.2719,0.0596,0.0948,0.0476,0.0988,0.3578,0.0518,0.0948,0.0415,0.174,0.5063,0.0574,0.1208,0.5881,16.6096,1.0,3,High-Value Frequent Active Shoppers

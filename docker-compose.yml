@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: retail_recommendation_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./artifacts:/app/artifacts
+      - ./outputs:/app/outputs
+      - ./data:/app/data
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000
+
+  dashboard:
+    build: .
+    container_name: retail_recommendation_dashboard
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./artifacts:/app/artifacts
+      - ./outputs:/app/outputs
+      - ./data:/app/data
+    environment:
+      - API_URL=http://api:8000
+    command: streamlit run src/dashboard/app.py --server.port 8501 --server.address 0.0.0.0
+    depends_on:
+      - api

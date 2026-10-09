@@ -1,0 +1,35 @@
+# Master Pipeline Configuration
+project:
+  name: "retail-customer-intelligence"
+  version: "1.0.0"
+  random_seed: 42
+  environment: "production"
+
+data:
+  raw_events_path: "data/raw/retail_events.csv"
+  raw_catalog_path: "data/raw/product_catalog.csv"
+  interim_dir: "data/interim"
+  processed_dir: "data/processed"
+  artifacts_dir: "artifacts"
+  reports_dir: "reports"
+  outputs_dir: "outputs"
+
+validation:
+  min_customer_interactions: 1
+  min_product_interactions: 1
+  max_price_threshold: 50000.0
+  min_price_threshold: 0.01
+  max_quantity_threshold: 1000
+  sparsity_warning_threshold: 0.9999
+
+split:
+  strategy: "temporal"
+  train_ratio: 0.70
+  val_ratio: 0.15
+  test_ratio: 0.15
+  min_history_events: 1
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s [%(levelname)s] [%(name)s] %(message)s"
+  log_file: "outputs/pipeline.log"

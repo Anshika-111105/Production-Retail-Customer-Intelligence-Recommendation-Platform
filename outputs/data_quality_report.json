@@ -1,0 +1,33 @@
+{
+  "row_count": 48968,
+  "initial_row_count": 48968,
+  "rows_filtered": 0,
+  "customer_count": 3000,
+  "product_count": 800,
+  "missing_values": {
+    "customer_id": 0,
+    "product_id": 0,
+    "transaction_id": 41647,
+    "timestamp": 0,
+    "quantity": 0,
+    "unit_price": 0,
+    "category": 0,
+    "brand": 0,
+    "description": 0,
+    "discount": 0,
+    "event_type": 0
+  },
+  "duplicate_rows": 0,
+  "invalid_transactions": 0,
+  "date_range": {
+    "min": "2026-01-01 00:04:30",
+    "max": "2026-06-29 23:55:17"
+  },
+  "sparsity": 0.979597,
+  "event_distribution": {
+    "view": 29265,
+    "add_to_cart": 12382,
+    "purchase": 7321
+  },
+  "filtering_log": []
+}
