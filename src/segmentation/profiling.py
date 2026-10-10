@@ -8,7 +8,6 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
@@ -87,7 +86,7 @@ class SegmentProfiler:
             row = {
                 "cluster_id": cid,
                 "label": label,
-                "customer_count": int(n_cust),
+                "customer_count": n_cust,
                 "percentage_of_customers": round(float(pct_cust), 2),
                 "avg_recency_days": round(float(c_means["recency"]), 2),
                 "avg_frequency": round(float(c_means["frequency"]), 2),
