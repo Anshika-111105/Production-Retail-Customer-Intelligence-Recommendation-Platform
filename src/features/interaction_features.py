@@ -79,9 +79,8 @@ class InteractionMatrixBuilder:
 
         user_item_csr = sp.csr_matrix(
             (data_values, (row_indices, col_indices)),
-            shape=(n_users, n_items),
-            dtype=np.float32
-        )
+            shape=(n_users, n_items)
+        ).astype(np.float32)
 
         logger.info(f"Interaction matrix assembled: {user_item_csr.shape} with {user_item_csr.nnz:,} non-zero entries.")
         return user_item_csr, agg_df
