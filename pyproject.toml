@@ -35,3 +35,8 @@ addopts = "-v --tb=short"
 where = ["."]
 include = ["src*"]
 
+[tool.pyrefly]
+search-path = [".", "src"]
+disable-search-path-heuristics = true
+
+
