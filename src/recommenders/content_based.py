@@ -8,8 +8,7 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
@@ -88,16 +87,16 @@ class ContentBasedRecommender(BaseRecommender):
         if "unit_price" in df.columns:
             price_vals = df[["unit_price"]].fillna(df["unit_price"].median()).values
             scaled_price = self.scaler_.fit_transform(price_vals)
-            price_sparse = sp.csr_matrix(scaled_price)
+            price_sparse = sp.csr_matrix(cast(Any, scaled_price))
         else:
             price_sparse = sp.csr_matrix((len(df), 1))
 
         # Combine sparse blocks
-        self.content_matrix_ = sp.hstack([text_features, cat_features, price_sparse]).tocsr()
+        self.content_matrix_ = sp.hstack(cast(Any, [text_features, cat_features, price_sparse])).tocsr()
 
         # Compute cosine similarities
         logger.info("Computing content cosine similarities...")
-        sim_mat = cosine_similarity(self.content_matrix_, dense_output=False)
+        sim_mat = cosine_similarity(cast(Any, self.content_matrix_), dense_output=False)
         
         self.similarity_dict_ = {}
         for idx in range(len(self.product_ids_)):
@@ -134,7 +133,7 @@ class ContentBasedRecommender(BaseRecommender):
         n: int = 10,
     ) -> List[Tuple[Union[int, str], float]]:
         """Cold-start strategy for a brand-new unseen product: embed attributes and find similar existing catalog items."""
-        if not self.is_fitted:
+        if not self.is_fitted or self.content_matrix_ is None:
             raise RuntimeError("ContentBasedRecommender is not fitted.")
 
         desc = [str(new_product_metadata.get("description", ""))]
@@ -146,17 +145,20 @@ class ContentBasedRecommender(BaseRecommender):
         cat_vec = self.ohe_.transform(cat_df)
 
         price = float(new_product_metadata.get("unit_price", 10.0))
-        price_vec = sp.csr_matrix(self.scaler_.transform([[price]]))
+        price_vec = sp.csr_matrix(cast(Any, self.scaler_.transform([[price]])))
 
-        query_vec = sp.hstack([text_vec, cat_vec, price_vec]).tocsr()
-        sim_scores = cosine_similarity(query_vec, self.content_matrix_).ravel()
+        query_vec = sp.hstack(cast(Any, [text_vec, cat_vec, price_vec])).tocsr()
+        sim_scores = np.asarray(
+            cosine_similarity(cast(Any, query_vec), cast(Any, self.content_matrix_)).ravel(),
+            dtype=np.float64,
+        )
 
         top_indices = np.argsort(sim_scores)[::-1][:n]
         return [(self.idx_to_product_[idx], float(sim_scores[idx])) for idx in top_indices]
 
     def recommend(
         self,
-        user_id: Union[int, str] = None,
+        user_id: Optional[Union[int, str]] = None,
         n: int = 10,
         filter_items: Optional[Set[Union[int, str]]] = None,
     ) -> List[Tuple[Union[int, str], float]]:
