@@ -109,7 +109,7 @@ features_df.head()
         code_cell("""clustering = CustomerClustering(n_clusters=4, random_state=42)
 diag = clustering.find_optimal_k(scaled_matrix, k_range=[2, 3, 4, 5, 6, 7, 8])
 cluster_labels = clustering.fit_predict(scaled_matrix)
-features_df['cluster'] = cluster_labels
+features_df['cluster'] = pd.Series(cluster_labels, index=features_df.index)
 """),
         md_cell("## 3. Automated Deterministic Segment Profiling (No Hardcoding)"),
         code_cell("""profiler = SegmentProfiler()
@@ -120,8 +120,12 @@ print(profiles_df[['cluster_id', 'label', 'customer_count', 'percentage_of_custo
         md_cell("## 4. 2D PCA Dimensionality Reduction Projection"),
         code_cell("""viz = SegmentVisualizer(n_components=2)
 viz.plot_pca_clusters(scaled_matrix, cluster_labels, cluster_names=labels_map, output_image_path='outputs/figures/customer_segments_pca.png')
-from IPython.display import Image
-Image('outputs/figures/customer_segments_pca.png')
+import matplotlib.image as mpimg
+img = mpimg.imread('outputs/figures/customer_segments_pca.png')
+plt.figure(figsize=(10, 8))
+plt.imshow(img)
+plt.axis('off')
+plt.show()
 """),
     ])
     with open(nb_dir / "02_customer_segmentation.ipynb", "w", encoding="utf-8") as f:
@@ -184,9 +188,11 @@ print("ALS Model Fitted.")
         md_cell("## 2. Train TruncatedSVD Baseline"),
         code_cell("""svd = SVDRecommender(n_components=32)
 svd.fit(csr_mat, id_builder)
-print(f"TruncatedSVD Fitted. Explained Variance Sum: {svd.svd.explained_variance_ratio_.sum():.4f}")
+var_sum = svd.svd.explained_variance_ratio_.sum() if svd.svd is not None and hasattr(svd.svd, "explained_variance_ratio_") else 0.0
+print(f"TruncatedSVD Fitted. Explained Variance Sum: {var_sum:.4f}")
 """),
         md_cell("## 3. Compare Personalization Recommendations"),
+
         code_cell("""sample_user = list(id_builder.user_to_idx.keys())[0]
 als_recs = als.recommend(sample_user, n=5)
 svd_recs = svd.recommend(sample_user, n=5)

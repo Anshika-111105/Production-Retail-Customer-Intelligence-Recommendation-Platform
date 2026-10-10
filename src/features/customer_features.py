@@ -1,5 +1,3 @@
-"""Customer-level feature engineering and RFM extraction."""
-
 import sys
 from pathlib import Path
 
@@ -56,17 +54,18 @@ class CustomerFeatureEngineer:
         # Calculate spend per row (quantity * unit_price * (1 - discount))
         spend = df["quantity"] * df["unit_price"] * (1.0 - df["discount"].fillna(0.0))
         df["calculated_spend"] = spend.clip(lower=0.0)
-        df["event_date"] = df["timestamp"].dt.date
+        df["event_date"] = df["timestamp"].dt.strftime("%Y-%m-%d")
 
         customer_groups = df.groupby("customer_id")
 
-        # 1. Recency
-        last_interaction = customer_groups["timestamp"].max()
-        recency = (ref_date - last_interaction).dt.total_seconds() / 86400.0
-        recency = recency.clip(lower=0.0)
-
-        # 2. Frequency
+        # 1. Frequency
         frequency = customer_groups.size()
+
+        # 2. Recency
+        last_interaction = customer_groups["timestamp"].max()
+        recency_days = (ref_date - last_interaction).values / np.timedelta64(1, "D")
+        recency = pd.Series(recency_days, index=frequency.index).clip(lower=0.0)
+
 
         # 3. Monetary value
         monetary = customer_groups["calculated_spend"].sum()
@@ -78,7 +77,17 @@ class CustomerFeatureEngineer:
         purchase_counts = purchase_groups.size().reindex(frequency.index, fill_value=0)
         purchase_spend = purchase_groups["calculated_spend"].sum().reindex(frequency.index, fill_value=0.0)
         
-        aov = np.where(purchase_counts > 0, purchase_spend / np.maximum(1, purchase_counts), monetary / np.maximum(1, frequency))
+        p_counts = purchase_counts.values
+        p_spend = purchase_spend.values
+        f_counts = frequency.values
+        m_spend = monetary.values
+
+        aov = np.where(
+            p_counts > 0,
+            p_spend / np.maximum(1, p_counts),
+            m_spend / np.maximum(1, f_counts)
+        )
+
 
         # 5. Average basket size
         basket_size = customer_groups["quantity"].mean().clip(lower=1.0)
@@ -129,7 +138,8 @@ class CustomerFeatureEngineer:
         log_cols = ["recency", "frequency", "monetary_value", "average_order_value", "unique_products", "active_days"]
         for col in log_cols:
             if col in transformed_df.columns:
-                transformed_df[f"{col}_log"] = np.log1p(np.clip(transformed_df[col], a_min=0, a_max=None))
+                clipped_vals = np.clip(transformed_df[col].values, a_min=0, a_max=None)
+                transformed_df[f"{col}_log"] = pd.Series(np.log1p(clipped_vals), index=transformed_df.index)
 
         cols_to_scale = [
             "recency_log",
@@ -153,9 +163,10 @@ class CustomerFeatureEngineer:
             scaled_matrix = self.scaler.transform(raw_matrix)
 
         for idx, col in enumerate(self.transformed_feature_columns):
-            transformed_df[col] = scaled_matrix[:, idx]
+            transformed_df[col] = pd.Series(scaled_matrix[:, idx], index=transformed_df.index)
 
-        return transformed_df, scaled_matrix
+        return transformed_df, np.asarray(scaled_matrix)
+
 
     def save(self, filepath: str = "artifacts/models/customer_scaler.joblib") -> None:
         """Persist fitted feature scaler."""
