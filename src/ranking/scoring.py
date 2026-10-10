@@ -59,14 +59,14 @@ class HybridScorer:
             return []
 
         sources = list(self.weights.keys())
-        raw_matrix = {s: [] for s in sources}
+        raw_matrix: Dict[str, List[float]] = {s: [] for s in sources}
 
         for item in target_items:
             for s in sources:
                 raw_matrix[s].append(candidate_pool.get_source_score(item, s))
 
         # Normalize score vector per source
-        norm_matrix = {}
+        norm_matrix: Dict[str, np.ndarray] = {}
         for s in sources:
             norm_matrix[s] = self._normalize_array(np.array(raw_matrix[s], dtype=np.float32))
 
@@ -81,24 +81,28 @@ class HybridScorer:
         if total_weight > 0:
             final_scores /= total_weight
 
-        # Build output objects with contribution breakdowns
-        ranked_items = []
-        for idx, item in enumerate(target_items):
+        # Sort descending by final score
+        order = np.argsort(-final_scores, kind="stable")
+        top_indices = order[:top_n]
+
+        # Build output objects with contribution breakdowns for top-N items
+        ranked_items: List[Dict[str, Any]] = []
+        for r_idx, idx in enumerate(top_indices):
+            idx_int = int(idx)
+            item = target_items[idx_int]
             item_sources = candidate_pool.get_sources_for_item(item)
-            source_scores = {s: round(float(norm_matrix[s][idx]), 4) for s in sources if norm_matrix[s][idx] > 0}
+            source_scores = {
+                s: round(float(norm_matrix[s][idx_int]), 4)
+                for s in sources
+                if norm_matrix[s][idx_int] > 0
+            }
             ranked_items.append({
                 "product_id": item,
-                "score": float(final_scores[idx]),
+                "score": round(float(final_scores[idx_int]), 4),
+                "rank": r_idx + 1,
                 "sources": item_sources,
                 "source_scores": source_scores,
             })
 
-        # Sort descending by final score
-        ranked_items.sort(key=lambda x: x["score"], reverse=True)
-        
-        # Add rank position
-        for r_idx, item_dict in enumerate(ranked_items[:top_n]):
-            item_dict["rank"] = r_idx + 1
-            item_dict["score"] = round(float(item_dict["score"]), 4)
+        return ranked_items
 
-        return ranked_items[:top_n]
