@@ -72,7 +72,7 @@ class InteractionMatrixBuilder:
         
         row_indices = [self.user_to_idx[uid] for uid in agg_df["customer_id"]]
         col_indices = [self.item_to_idx[iid] for iid in agg_df["product_id"]]
-        data_values = agg_df["interaction_strength"].values.astype(np.float32)
+        data_values = [float(v) for v in agg_df["interaction_strength"]]
 
         n_users = len(self.user_to_idx)
         n_items = len(self.item_to_idx)
