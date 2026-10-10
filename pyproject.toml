@@ -39,6 +39,7 @@ include = ["src*"]
 search-path = [".", "src"]
 disable-search-path-heuristics = true
 project-includes = ["src/**/*.py", "scripts/**/*.py", "tests/**/*.py"]
+project-excludes = ["notebooks/**", "**/*.ipynb"]
 
 
 
