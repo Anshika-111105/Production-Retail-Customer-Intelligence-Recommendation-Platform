@@ -81,10 +81,11 @@ class SegmentProfiler:
                     traits.append("Core Mainstream")
 
             label = " ".join(traits) + " Shoppers"
-            cluster_labels_map[int(cluster_id)] = label
+            cid = int(float(str(cluster_id)))
+            cluster_labels_map[cid] = label
 
             row = {
-                "cluster_id": int(cluster_id),
+                "cluster_id": cid,
                 "label": label,
                 "customer_count": int(n_cust),
                 "percentage_of_customers": round(float(pct_cust), 2),

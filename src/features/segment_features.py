@@ -1,18 +1,14 @@
-"""Customer segment preference mining and candidate scoring."""
-
 import sys
-from pathlib import Path
-
-# Ensure project root is in sys.path for direct execution or IDE imports
-_PROJECT_ROOT = Path(__file__).resolve().parents[2]
-if str(_PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(_PROJECT_ROOT))
-
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 import joblib
+
+# Ensure project root is in sys.path for direct execution or IDE imports
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
 
 from src.utils.logger import get_logger
 
@@ -34,7 +30,7 @@ class SegmentPreferenceMiner:
         merged = events_df.merge(customer_clusters_df[["customer_id", "cluster"]], on="customer_id", how="inner")
 
         for cluster_id, group in merged.groupby("cluster"):
-            cid = int(cluster_id)
+            cid = int(float(str(cluster_id)))
             
             # Weighted interaction count per product in this segment
             prod_counts = group["product_id"].value_counts()
