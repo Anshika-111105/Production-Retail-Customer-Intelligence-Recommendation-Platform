@@ -1,5 +1,3 @@
-"""Offline recommender evaluation pipeline with temporal leakage prevention."""
-
 import sys
 from pathlib import Path
 
@@ -8,7 +6,6 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 import numpy as np
 import pandas as pd
@@ -45,9 +42,10 @@ class RecommenderEvaluator:
 
     def extract_ground_truth(self, test_df: pd.DataFrame) -> Dict[Union[int, str], Set[Union[int, str]]]:
         """Extract set of actual interacted items per customer in temporal test window."""
-        gt_dict = {}
+        gt_dict: Dict[Union[int, str], Set[Union[int, str]]] = {}
         for uid, grp in test_df.groupby("customer_id"):
-            gt_dict[uid] = set(grp["product_id"].unique())
+            user_id: Union[int, str] = int(uid) if isinstance(uid, (int, np.integer)) else str(uid)
+            gt_dict[user_id] = set(grp["product_id"].tolist())
         return gt_dict
 
     def evaluate_model(
@@ -57,7 +55,7 @@ class RecommenderEvaluator:
         ground_truth: Dict[Union[int, str], Set[Union[int, str]]],
         user_ids: Optional[List[Union[int, str]]] = None,
         filter_items_dict: Optional[Dict[Union[int, str], Set[Union[int, str]]]] = None,
-    ) -> Dict[str, float]:
+    ) -> Dict[str, Any]:
         """Compute ranking and diversity metrics for a given recommendation strategy."""
         eval_users = user_ids if user_ids is not None else list(ground_truth.keys())
         max_k = max(self.k_list)
@@ -105,7 +103,7 @@ class RecommenderEvaluator:
             metrics_acc["novelty@10"].append(novelty_at_k(rec_items[:10], self.item_popularity_prob, k=10))
 
         # Aggregate means
-        summary = {"model": model_name, "eval_users": len(eval_users)}
+        summary: Dict[str, Any] = {"model": model_name, "eval_users": len(eval_users)}
         for m_name, vals in metrics_acc.items():
             summary[m_name] = round(float(np.mean(vals)), 4) if vals else 0.0
 
