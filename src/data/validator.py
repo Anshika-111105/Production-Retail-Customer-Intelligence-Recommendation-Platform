@@ -1,5 +1,3 @@
-"""Data quality checks and validation reporter."""
-
 import sys
 from pathlib import Path
 
@@ -9,7 +7,6 @@ if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 import json
-from pathlib import Path
 from typing import Any, Dict, List, Tuple
 import numpy as np
 import pandas as pd
@@ -21,16 +18,16 @@ logger = get_logger("data_validator")
 
 class NumpyJSONEncoder(json.JSONEncoder):
     """Custom JSON encoder for numpy types."""
-    def default(self, obj):
-        if isinstance(obj, (np.integer, np.int64, np.int32)):
-            return int(obj)
-        elif isinstance(obj, (np.floating, np.float64, np.float32)):
-            return float(obj)
-        elif isinstance(obj, (np.ndarray,)):
-            return obj.tolist()
-        elif isinstance(obj, (pd.Timestamp,)):
-            return str(obj)
-        return super().default(obj)
+    def default(self, o: Any) -> Any:
+        if isinstance(o, (np.integer, np.int64, np.int32)):
+            return int(o)
+        elif isinstance(o, (np.floating, np.float64, np.float32)):
+            return float(o)
+        elif isinstance(o, (np.ndarray,)):
+            return o.tolist()
+        elif isinstance(o, (pd.Timestamp,)):
+            return str(o)
+        return super().default(o)
 
 
 class DataValidator:
@@ -56,9 +53,9 @@ class DataValidator:
         filtering_log: List[str] = []
 
         # 1. Null ID checks
-        null_cust = int(df["customer_id"].isnull().sum())
-        null_prod = int(df["product_id"].isnull().sum())
-        null_ts = int(df["timestamp"].isnull().sum())
+        null_cust = df["customer_id"].isnull().sum()
+        null_prod = df["product_id"].isnull().sum()
+        null_ts = df["timestamp"].isnull().sum()
 
         if null_cust > 0:
             filtering_log.append(f"Removed {null_cust} rows with missing customer_id")
@@ -72,21 +69,21 @@ class DataValidator:
 
         # 2. Timestamp parsing
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
-        invalid_ts_count = int(df["timestamp"].isnull().sum())
+        invalid_ts_count = df["timestamp"].isnull().sum()
         if invalid_ts_count > 0:
             filtering_log.append(f"Removed {invalid_ts_count} rows with unparseable timestamps")
             df = df[df["timestamp"].notnull()].copy()
 
         # 3. Duplicate checks
         dup_mask = df.duplicated(subset=["customer_id", "product_id", "timestamp", "event_type"], keep="first")
-        dup_count = int(dup_mask.sum())
+        dup_count = dup_mask.sum()
         if dup_count > 0:
             filtering_log.append(f"Removed {dup_count} exact duplicate interaction rows")
             df = df[~dup_mask].copy()
 
         # 4. Numerical validation (quantities and prices)
         invalid_qty = (df["quantity"] < 0) | (df["quantity"] > self.max_quantity)
-        invalid_qty_count = int(invalid_qty.sum())
+        invalid_qty_count = invalid_qty.sum()
         if invalid_qty_count > 0:
             filtering_log.append(f"Sanitized/clamped {invalid_qty_count} rows with negative or extreme quantities")
             df.loc[df["quantity"] < 0, "quantity"] = 0
@@ -94,35 +91,35 @@ class DataValidator:
 
         if "unit_price" in df.columns:
             invalid_price = (df["unit_price"] < self.min_price) | (df["unit_price"] > self.max_price)
-            invalid_price_count = int(invalid_price.sum())
+            invalid_price_count = invalid_price.sum()
             if invalid_price_count > 0:
                 median_price = float(df["unit_price"].median()) if not df["unit_price"].empty else 10.0
                 filtering_log.append(f"Imputed {invalid_price_count} anomalous prices with median ({median_price:.2f})")
                 df.loc[invalid_price, "unit_price"] = median_price
 
         # 5. Missing values breakdown
-        missing_dict = {str(col): int(df[col].isnull().sum()) for col in df.columns}
+        missing_dict = {col: df[col].isnull().sum() for col in df.columns}
 
         # 6. Interaction Matrix Sparsity
-        n_cust = int(df["customer_id"].nunique())
-        n_prod = int(df["product_id"].nunique())
+        n_cust = df["customer_id"].nunique()
+        n_prod = df["product_id"].nunique()
         total_possible = n_cust * n_prod if (n_cust > 0 and n_prod > 0) else 1
         sparsity = 1.0 - (len(df) / float(total_possible))
 
         # 7. Date range & event distribution
         min_date = str(df["timestamp"].min())
         max_date = str(df["timestamp"].max())
-        event_dist = {str(k): int(v) for k, v in df["event_type"].value_counts().items()} if "event_type" in df.columns else {}
+        event_dist = {str(k): v for k, v in df["event_type"].value_counts().items()} if "event_type" in df.columns else {}
 
         report = {
-            "row_count": int(len(df)),
-            "initial_row_count": int(initial_len),
-            "rows_filtered": int(initial_len - len(df)),
-            "customer_count": int(n_cust),
-            "product_count": int(n_prod),
+            "row_count": len(df),
+            "initial_row_count": initial_len,
+            "rows_filtered": initial_len - len(df),
+            "customer_count": n_cust,
+            "product_count": n_prod,
             "missing_values": missing_dict,
-            "duplicate_rows": int(dup_count),
-            "invalid_transactions": int(invalid_ts_count + null_cust + null_prod),
+            "duplicate_rows": dup_count,
+            "invalid_transactions": invalid_ts_count + null_cust + null_prod,
             "date_range": {"min": min_date, "max": max_date},
             "sparsity": round(float(sparsity), 6),
             "event_distribution": event_dist,
