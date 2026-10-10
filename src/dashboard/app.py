@@ -8,7 +8,7 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from pathlib import Path
+from typing import Any, Dict
 import json
 import pandas as pd
 import numpy as np
@@ -177,7 +177,7 @@ if page == "🛍️ Customer Recommendations":
         st.info("🆕 **Brand New Customer Detected** (0 interaction history). Routing dynamically to **Cold-Start Strategy** (Popularity + Trending momentum + Category Context).")
 
     # Generate Recommendations
-    context = {}
+    context: Dict[str, Any] = {}
     if cat_filter != "All Categories":
         context["allowed_categories"] = [cat_filter]
         context["category_context"] = cat_filter
