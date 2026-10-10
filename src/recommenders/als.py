@@ -8,7 +8,6 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 import numpy as np
 import scipy.sparse as sp
@@ -82,7 +81,7 @@ class ALSRecommender(BaseRecommender):
         filter_items: Optional[Set[Union[int, str]]] = None,
     ) -> List[Tuple[Union[int, str], float]]:
         """Generate top-N ALS personalized recommendations."""
-        if not self.is_fitted or self.model is None or not self.id_builder_:
+        if not self.is_fitted or self.model is None or not self.id_builder_ or self.user_item_csr_ is None:
             raise RuntimeError("ALSRecommender is not fitted.")
 
         u_idx = self.id_builder_.user_to_idx.get(user_id)
