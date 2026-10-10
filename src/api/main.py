@@ -8,7 +8,7 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from pathlib import Path
+from contextlib import asynccontextmanager
 from typing import Any, Dict, List, Optional, Union
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,21 +23,6 @@ from src.utils.config import AppConfig
 
 logger = get_logger("api_service")
 
-app = FastAPI(
-    title="Retail Customer Intelligence & Recommendation Platform",
-    description="High-performance, modular e-commerce customer segmentation and hybrid recommendation engine.",
-    version="1.0.0",
-)
-
-# Enable CORS for Streamlit dashboard and web clients
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # Global Engine & Artifact State
 engine: Optional[RecommendationEngine] = None
 customer_features_df: Optional[pd.DataFrame] = None
@@ -46,7 +31,6 @@ evaluation_metrics_df: Optional[pd.DataFrame] = None
 config: Optional[AppConfig] = None
 
 
-@app.on_event("startup")
 def load_artifacts():
     """Load engine and feature tables on service startup."""
     global engine, customer_features_df, segment_profiles_df, evaluation_metrics_df, config
@@ -68,6 +52,29 @@ def load_artifacts():
     
     if Path("outputs/metrics/evaluation_metrics.csv").exists():
         evaluation_metrics_df = pd.read_csv("outputs/metrics/evaluation_metrics.csv")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    load_artifacts()
+    yield
+
+
+app = FastAPI(
+    title="Retail Customer Intelligence & Recommendation Platform",
+    description="High-performance, modular e-commerce customer segmentation and hybrid recommendation engine.",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+# Enable CORS for Streamlit dashboard and web clients
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # --- Pydantic Response Schemas ---
@@ -185,7 +192,7 @@ def get_recommendations(
     if engine is None:
         raise HTTPException(status_code=503, detail="Recommendation engine is not initialized.")
 
-    context = {}
+    context: Dict[str, Any] = {}
     if category_context:
         context["allowed_categories"] = [category_context]
     if min_price is not None:
