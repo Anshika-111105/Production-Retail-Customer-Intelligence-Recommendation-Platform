@@ -1,18 +1,15 @@
 import sys
 from pathlib import Path
-import numpy as np
-
-# Ensure project root is in sys.path for direct execution or IDE imports
-_PROJECT_ROOT = Path(__file__).resolve().parents[2]
-if str(_PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(_PROJECT_ROOT))
-
-from pathlib import Path
 from typing import Dict, Optional, Tuple
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import RobustScaler, StandardScaler
 import joblib
+
+# Ensure project root is in sys.path for direct execution or IDE imports
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
 
 from src.utils.logger import get_logger
 
@@ -77,9 +74,9 @@ class CustomerFeatureEngineer:
         purchase_counts = purchase_groups.size().reindex(frequency.index, fill_value=0)
         purchase_spend = purchase_groups["calculated_spend"].sum().reindex(frequency.index, fill_value=0.0)
 
-        p_cnts = [int(c) for c in purchase_counts]
+        p_cnts = [c for c in purchase_counts]
         p_sp = [float(s) for s in purchase_spend]
-        f_cnts = [int(f) for f in frequency]
+        f_cnts = [f for f in frequency]
         m_sp = [float(m) for m in monetary]
 
         aov_list = [
@@ -140,7 +137,7 @@ class CustomerFeatureEngineer:
         for col in log_cols:
             if col in transformed_df.columns:
                 col_vals = [max(0.0, float(x)) for x in transformed_df[col]]
-                transformed_df[f"{col}_log"] = pd.Series(np.log1p(col_vals), index=transformed_df.index)
+                transformed_df[f"{col}_log"] = np.log1p(col_vals).tolist()
 
 
         cols_to_scale = [
@@ -165,7 +162,7 @@ class CustomerFeatureEngineer:
             scaled_matrix = self.scaler.transform(raw_matrix)
 
         for idx, col in enumerate(self.transformed_feature_columns):
-            transformed_df[col] = pd.Series(scaled_matrix[:, idx], index=transformed_df.index)
+            transformed_df[col] = scaled_matrix[:, idx].tolist()
 
         return transformed_df, np.asarray(scaled_matrix)
 
