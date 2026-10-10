@@ -1,5 +1,3 @@
-"""Data Preprocessing and Temporal Splitting pipeline preventing data leakage."""
-
 import sys
 from pathlib import Path
 
@@ -8,8 +6,7 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from pathlib import Path
-from typing import Dict, Tuple
+from typing import Any, Dict, Tuple
 import pandas as pd
 import numpy as np
 
@@ -33,7 +30,7 @@ class DataPreprocessor:
         self.test_ratio = test_ratio
         self.processed_dir = Path(processed_dir)
 
-    def temporal_split(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, Dict[str, pd.Timestamp]]:
+    def temporal_split(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, Dict[str, Any]]:
         """Split interactions temporally by global timestamp index ordering to prevent temporal leakage."""
         logger.info("Executing strict temporal train/val/test data split...")
         df_sorted = df.sort_values("timestamp").reset_index(drop=True)
