@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+import numpy as np
 
 # Ensure project root is in sys.path for direct execution or IDE imports
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -54,7 +55,7 @@ class CustomerFeatureEngineer:
         # Calculate spend per row (quantity * unit_price * (1 - discount))
         spend = df["quantity"] * df["unit_price"] * (1.0 - df["discount"].fillna(0.0))
         df["calculated_spend"] = spend.clip(lower=0.0)
-        df["event_date"] = df["timestamp"].dt.strftime("%Y-%m-%d")
+        df["event_date"] = [str(ts)[:10] for ts in df["timestamp"]]
 
         customer_groups = df.groupby("customer_id")
 
@@ -63,9 +64,8 @@ class CustomerFeatureEngineer:
 
         # 2. Recency
         last_interaction = customer_groups["timestamp"].max()
-        recency_days = (ref_date - last_interaction).values / np.timedelta64(1, "D")
+        recency_days = [float((ref_date - t).total_seconds() / 86400.0) for t in last_interaction]
         recency = pd.Series(recency_days, index=frequency.index).clip(lower=0.0)
-
 
         # 3. Monetary value
         monetary = customer_groups["calculated_spend"].sum()
@@ -76,17 +76,18 @@ class CustomerFeatureEngineer:
         purchase_groups = purchase_df.groupby("customer_id")
         purchase_counts = purchase_groups.size().reindex(frequency.index, fill_value=0)
         purchase_spend = purchase_groups["calculated_spend"].sum().reindex(frequency.index, fill_value=0.0)
-        
-        p_counts = purchase_counts.values
-        p_spend = purchase_spend.values
-        f_counts = frequency.values
-        m_spend = monetary.values
 
-        aov = np.where(
-            p_counts > 0,
-            p_spend / np.maximum(1, p_counts),
-            m_spend / np.maximum(1, f_counts)
-        )
+        p_cnts = [int(c) for c in purchase_counts]
+        p_sp = [float(s) for s in purchase_spend]
+        f_cnts = [int(f) for f in frequency]
+        m_sp = [float(m) for m in monetary]
+
+        aov_list = [
+            p_sp[i] / max(1, p_cnts[i]) if p_cnts[i] > 0 else m_sp[i] / max(1, f_cnts[i])
+            for i in range(len(f_cnts))
+        ]
+        aov = np.array(aov_list, dtype=np.float64)
+
 
 
         # 5. Average basket size
@@ -138,8 +139,9 @@ class CustomerFeatureEngineer:
         log_cols = ["recency", "frequency", "monetary_value", "average_order_value", "unique_products", "active_days"]
         for col in log_cols:
             if col in transformed_df.columns:
-                clipped_vals = np.clip(transformed_df[col].values, a_min=0, a_max=None)
-                transformed_df[f"{col}_log"] = pd.Series(np.log1p(clipped_vals), index=transformed_df.index)
+                col_vals = [max(0.0, float(x)) for x in transformed_df[col]]
+                transformed_df[f"{col}_log"] = pd.Series(np.log1p(col_vals), index=transformed_df.index)
+
 
         cols_to_scale = [
             "recency_log",

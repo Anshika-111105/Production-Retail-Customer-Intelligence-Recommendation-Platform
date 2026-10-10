@@ -38,5 +38,7 @@ include = ["src*"]
 [tool.pyrefly]
 search-path = [".", "src"]
 disable-search-path-heuristics = true
+project-includes = ["src/**/*.py", "scripts/**/*.py", "tests/**/*.py"]
+
 
 
