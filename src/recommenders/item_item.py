@@ -8,7 +8,6 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 import numpy as np
 import pandas as pd
@@ -48,15 +47,17 @@ class ItemItemRecommender(BaseRecommender):
         user_item_csr_coo = user_item_csr.tocoo()
         self.user_history_ = {}
         for u_idx, i_idx, val in zip(user_item_csr_coo.row, user_item_csr_coo.col, user_item_csr_coo.data):
-            if u_idx not in self.user_history_:
-                self.user_history_[u_idx] = {}
-            self.user_history_[u_idx][i_idx] = float(val)
+            u = int(u_idx)
+            i = int(i_idx)
+            if u not in self.user_history_:
+                self.user_history_[u] = {}
+            self.user_history_[u][i] = float(val)
 
         # L2 normalize rows of item_user_csc (items)
         norms = sp.linalg.norm(item_user_csc, axis=1)
         norms[norms == 0] = 1.0
         norm_diag = sp.diags(1.0 / norms.ravel())
-        normalized_item_user = norm_diag @ item_user_csc
+        normalized_item_user: sp.csr_matrix = (norm_diag @ item_user_csc).tocsr()
 
         # Compute cosine similarity per batch of items to ensure sparse memory efficiency
         batch_size = 200
