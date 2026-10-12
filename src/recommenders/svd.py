@@ -8,8 +8,7 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 import numpy as np
 import scipy.sparse as sp
 from sklearn.decomposition import TruncatedSVD
@@ -36,8 +35,8 @@ class SVDRecommender(BaseRecommender):
         self.n_components = n_components
         self.random_state = random_state
         self.svd: Optional[TruncatedSVD] = None
-        self.user_embeddings_: Optional[np.ndarray] = None
-        self.item_components_: Optional[np.ndarray] = None
+        self.user_embeddings_: Optional[Any] = None
+        self.item_components_: Optional[Any] = None
         self.user_interacted_: Dict[int, Set[int]] = {}
         self.id_builder_: Optional[InteractionMatrixBuilder] = None
 
@@ -49,16 +48,18 @@ class SVDRecommender(BaseRecommender):
         actual_components = min(self.n_components, n_items - 1, n_users - 1)
 
         self.svd = TruncatedSVD(n_components=actual_components, random_state=self.random_state)
-        self.user_embeddings_ = self.svd.fit_transform(user_item_csr)
+        self.user_embeddings_ = self.svd.fit_transform(cast(Any, user_item_csr))
         self.item_components_ = self.svd.components_  # shape: (n_components, n_items)
 
         # Record user interactions for filtering
         coo = user_item_csr.tocoo()
         self.user_interacted_ = {}
         for u_idx, i_idx in zip(coo.row, coo.col):
-            if u_idx not in self.user_interacted_:
-                self.user_interacted_[u_idx] = set()
-            self.user_interacted_[u_idx].add(i_idx)
+            u = int(u_idx)
+            i = int(i_idx)
+            if u not in self.user_interacted_:
+                self.user_interacted_[u] = set()
+            self.user_interacted_[u].add(i)
 
         self.is_fitted = True
         logger.info(
@@ -73,7 +74,7 @@ class SVDRecommender(BaseRecommender):
         filter_items: Optional[Set[Union[int, str]]] = None,
     ) -> List[Tuple[Union[int, str], float]]:
         """Generate top-N SVD reconstructed affinity recommendations."""
-        if not self.is_fitted or self.user_embeddings_ is None or not self.id_builder_:
+        if not self.is_fitted or self.user_embeddings_ is None or self.item_components_ is None or not self.id_builder_:
             raise RuntimeError("SVDRecommender is not fitted.")
 
         u_idx = self.id_builder_.user_to_idx.get(user_id)
