@@ -1,5 +1,3 @@
-"""TruncatedSVD Matrix Factorization Baseline Recommender."""
-
 import sys
 from pathlib import Path
 

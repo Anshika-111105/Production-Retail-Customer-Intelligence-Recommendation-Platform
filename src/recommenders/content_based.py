@@ -1,5 +1,3 @@
-"""Content-Based Product Recommender with text, categorical, and numerical multi-modal embeddings."""
-
 import sys
 from pathlib import Path
 
