@@ -8,7 +8,7 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 import numpy as np
 import scipy.sparse as sp
 import joblib
@@ -43,8 +43,8 @@ class ALSRecommender(BaseRecommender):
         self.alpha_confidence = alpha_confidence
         self.random_state = random_state
         self.model: Optional[Any] = None
-        self.user_factors_: Optional[np.ndarray] = None
-        self.item_factors_: Optional[np.ndarray] = None
+        self.user_factors_: Optional[Any] = None
+        self.item_factors_: Optional[Any] = None
         self.user_item_csr_: Optional[sp.csr_matrix] = None
         self.id_builder_: Optional[InteractionMatrixBuilder] = None
 
@@ -77,7 +77,7 @@ class ALSRecommender(BaseRecommender):
             from sklearn.decomposition import TruncatedSVD
             n_comp = min(self.factors, user_item_csr.shape[1] - 1, user_item_csr.shape[0] - 1)
             svd = TruncatedSVD(n_components=max(1, n_comp), random_state=self.random_state)
-            self.user_factors_ = svd.fit_transform(user_item_csr.astype(np.float32))
+            self.user_factors_ = svd.fit_transform(cast(Any, user_item_csr.astype(np.float32)))
             self.item_factors_ = svd.components_.T
 
         self.is_fitted = True
@@ -92,9 +92,6 @@ class ALSRecommender(BaseRecommender):
     ) -> List[Tuple[Union[int, str], float]]:
         """Generate top-N ALS personalized recommendations."""
         if not self.is_fitted or not self.id_builder_ or self.user_item_csr_ is None:
-            raise RuntimeError("ALSRecommender is not fitted.")
-
-        if self.model is None and (self.user_factors_ is None or self.item_factors_ is None):
             raise RuntimeError("ALSRecommender is not fitted.")
 
         u_idx = self.id_builder_.user_to_idx.get(user_id)
@@ -112,12 +109,14 @@ class ALSRecommender(BaseRecommender):
                 N=fetch_n,
                 filter_already_liked_items=False,
             )
-        else:
+        elif self.user_factors_ is not None and self.item_factors_ is not None:
             u_vec = self.user_factors_[u_idx]
             raw_scores = np.dot(u_vec, self.item_factors_.T)
             top_order = np.argsort(-raw_scores)[:fetch_n]
             item_indices = top_order
             scores = raw_scores[top_order]
+        else:
+            raise RuntimeError("ALSRecommender is not fitted.")
 
         # Normalize scores to [0, 1]
         max_score = float(np.max(scores)) if len(scores) > 0 else 1.0
