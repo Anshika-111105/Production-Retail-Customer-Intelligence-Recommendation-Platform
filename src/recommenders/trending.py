@@ -8,7 +8,6 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 import numpy as np
 import pandas as pd
@@ -69,7 +68,7 @@ class TrendingRecommender(BaseRecommender):
 
     def recommend(
         self,
-        user_id: Union[int, str] = None,
+        user_id: Optional[Union[int, str]] = None,
         n: int = 10,
         filter_items: Optional[Set[Union[int, str]]] = None,
     ) -> List[Tuple[Union[int, str], float]]:
