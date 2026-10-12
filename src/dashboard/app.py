@@ -1,5 +1,3 @@
-"""Interactive Streamlit Dashboard for Retail Customer Intelligence & Recommendation Platform."""
-
 import sys
 from pathlib import Path
 
@@ -76,20 +74,29 @@ st.markdown("""
 def load_all_artifacts():
     """Load precomputed engine, features, and metrics."""
     try:
-        engine = RecommendationEngine.load("artifacts")
+        engine = RecommendationEngine.load(str(_PROJECT_ROOT / "artifacts"))
     except Exception as e:
+        logger.warning(f"Could not load RecommendationEngine: {e}")
         engine = None
 
-    cust_features = pd.read_parquet("artifacts/features/customer_features.parquet") if Path("artifacts/features/customer_features.parquet").exists() else pd.DataFrame()
-    prod_features = pd.read_parquet("artifacts/features/product_features.parquet") if Path("artifacts/features/product_features.parquet").exists() else pd.DataFrame()
-    eval_metrics = pd.read_csv("outputs/metrics/evaluation_metrics.csv") if Path("outputs/metrics/evaluation_metrics.csv").exists() else pd.DataFrame()
-    ablation_df = pd.read_csv("outputs/metrics/ablation_study.csv") if Path("outputs/metrics/ablation_study.csv").exists() else pd.DataFrame()
-    segment_eval_df = pd.read_csv("outputs/metrics/segment_evaluation.csv") if Path("outputs/metrics/segment_evaluation.csv").exists() else pd.DataFrame()
-    segment_profiles = pd.read_csv("outputs/segment_profiles.csv") if Path("outputs/segment_profiles.csv").exists() else pd.DataFrame()
+    cust_path = _PROJECT_ROOT / "artifacts" / "features" / "customer_features.parquet"
+    prod_path = _PROJECT_ROOT / "artifacts" / "features" / "product_features.parquet"
+    eval_path = _PROJECT_ROOT / "outputs" / "metrics" / "evaluation_metrics.csv"
+    ablation_path = _PROJECT_ROOT / "outputs" / "metrics" / "ablation_study.csv"
+    seg_eval_path = _PROJECT_ROOT / "outputs" / "metrics" / "segment_evaluation.csv"
+    seg_prof_path = _PROJECT_ROOT / "outputs" / "segment_profiles.csv"
+    dq_path = _PROJECT_ROOT / "outputs" / "data_quality_report.json"
+
+    cust_features = pd.read_parquet(cust_path) if cust_path.exists() else pd.DataFrame()
+    prod_features = pd.read_parquet(prod_path) if prod_path.exists() else pd.DataFrame()
+    eval_metrics = pd.read_csv(eval_path) if eval_path.exists() else pd.DataFrame()
+    ablation_df = pd.read_csv(ablation_path) if ablation_path.exists() else pd.DataFrame()
+    segment_eval_df = pd.read_csv(seg_eval_path) if seg_eval_path.exists() else pd.DataFrame()
+    segment_profiles = pd.read_csv(seg_prof_path) if seg_prof_path.exists() else pd.DataFrame()
     
     dq_report = {}
-    if Path("outputs/data_quality_report.json").exists():
-        with open("outputs/data_quality_report.json", "r") as f:
+    if dq_path.exists():
+        with open(dq_path, "r", encoding="utf-8") as f:
             dq_report = json.load(f)
 
     return engine, cust_features, prod_features, eval_metrics, ablation_df, segment_eval_df, segment_profiles, dq_report
@@ -324,7 +331,7 @@ elif page == "👥 Customer Segmentation":
 
     with v_col1:
         st.markdown("#### 🗺️ 2D PCA Cluster Projection")
-        pca_img_path = Path("outputs/figures/customer_segments_pca.png")
+        pca_img_path = _PROJECT_ROOT / "outputs" / "figures" / "customer_segments_pca.png"
         if pca_img_path.exists():
             st.image(str(pca_img_path), caption="Customer Segments in 2D PCA Dimensionality Reduction Space", use_container_width=True)
         else:

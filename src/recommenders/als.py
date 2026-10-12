@@ -43,6 +43,8 @@ class ALSRecommender(BaseRecommender):
         self.alpha_confidence = alpha_confidence
         self.random_state = random_state
         self.model: Optional[Any] = None
+        self.user_factors_: Optional[np.ndarray] = None
+        self.item_factors_: Optional[np.ndarray] = None
         self.user_item_csr_: Optional[sp.csr_matrix] = None
         self.id_builder_: Optional[InteractionMatrixBuilder] = None
 
@@ -55,21 +57,29 @@ class ALSRecommender(BaseRecommender):
         self.id_builder_ = id_builder
         self.user_item_csr_ = user_item_csr
 
-        if AlternatingLeastSquares is None:
-            raise ImportError("implicit package is not installed. Please install with 'pip install implicit'.")
+        if AlternatingLeastSquares is not None:
+            self.model = AlternatingLeastSquares(
+                factors=self.factors,
+                regularization=self.regularization,
+                iterations=self.iterations,
+                random_state=self.random_state,
+            )
 
-        self.model = AlternatingLeastSquares(
-            factors=self.factors,
-            regularization=self.regularization,
-            iterations=self.iterations,
-            random_state=self.random_state,
-        )
+            # Scale interaction matrix with confidence: C_ui = 1 + alpha * r_ui
+            confidence_matrix = (user_item_csr * self.alpha_confidence).astype(np.float32)
 
-        # Scale interaction matrix with confidence: C_ui = 1 + alpha * r_ui
-        confidence_matrix = (user_item_csr * self.alpha_confidence).astype(np.float32)
+            # Fit model
+            self.model.fit(confidence_matrix, show_progress=False)
+            self.user_factors_ = getattr(self.model, "user_factors", None)
+            self.item_factors_ = getattr(self.model, "item_factors", None)
+        else:
+            # Latent decomposition fallback when implicit binary is unavailable
+            from sklearn.decomposition import TruncatedSVD
+            n_comp = min(self.factors, user_item_csr.shape[1] - 1, user_item_csr.shape[0] - 1)
+            svd = TruncatedSVD(n_components=max(1, n_comp), random_state=self.random_state)
+            self.user_factors_ = svd.fit_transform(user_item_csr.astype(np.float32))
+            self.item_factors_ = svd.components_.T
 
-        # Fit model
-        self.model.fit(confidence_matrix, show_progress=False)
         self.is_fitted = True
         logger.info("ALS model training complete.")
         return self
@@ -81,7 +91,10 @@ class ALSRecommender(BaseRecommender):
         filter_items: Optional[Set[Union[int, str]]] = None,
     ) -> List[Tuple[Union[int, str], float]]:
         """Generate top-N ALS personalized recommendations."""
-        if not self.is_fitted or self.model is None or not self.id_builder_ or self.user_item_csr_ is None:
+        if not self.is_fitted or not self.id_builder_ or self.user_item_csr_ is None:
+            raise RuntimeError("ALSRecommender is not fitted.")
+
+        if self.model is None and (self.user_factors_ is None or self.item_factors_ is None):
             raise RuntimeError("ALSRecommender is not fitted.")
 
         u_idx = self.id_builder_.user_to_idx.get(user_id)
@@ -90,14 +103,21 @@ class ALSRecommender(BaseRecommender):
 
         filter_set = filter_items or set()
 
-        # Call implicit recommend asking for n + len(filter_set)
+        # Call recommend asking for n + len(filter_set)
         fetch_n = min(self.user_item_csr_.shape[1], n + len(filter_set) + 20)
-        item_indices, scores = self.model.recommend(
-            userid=u_idx,
-            user_items=self.user_item_csr_[u_idx],
-            N=fetch_n,
-            filter_already_liked_items=False,
-        )
+        if self.model is not None:
+            item_indices, scores = self.model.recommend(
+                userid=u_idx,
+                user_items=self.user_item_csr_[u_idx],
+                N=fetch_n,
+                filter_already_liked_items=False,
+            )
+        else:
+            u_vec = self.user_factors_[u_idx]
+            raw_scores = np.dot(u_vec, self.item_factors_.T)
+            top_order = np.argsort(-raw_scores)[:fetch_n]
+            item_indices = top_order
+            scores = raw_scores[top_order]
 
         # Normalize scores to [0, 1]
         max_score = float(np.max(scores)) if len(scores) > 0 else 1.0
@@ -138,8 +158,8 @@ class ALSRecommender(BaseRecommender):
             "iterations": self.iterations,
             "alpha_confidence": self.alpha_confidence,
             "random_state": self.random_state,
-            "user_factors": self.model.user_factors if self.model else None,
-            "item_factors": self.model.item_factors if self.model else None,
+            "user_factors": getattr(self.model, "user_factors", None) if self.model else self.user_factors_,
+            "item_factors": getattr(self.model, "item_factors", None) if self.model else self.item_factors_,
             "user_item_csr_": self.user_item_csr_,
         }
         joblib.dump(payload, path)
@@ -156,15 +176,20 @@ class ALSRecommender(BaseRecommender):
             alpha_confidence=payload["alpha_confidence"],
             random_state=payload["random_state"],
         )
+        model.user_factors_ = payload.get("user_factors")
+        model.item_factors_ = payload.get("item_factors")
         if AlternatingLeastSquares is not None:
-            model.model = AlternatingLeastSquares(
-                factors=model.factors,
-                regularization=model.regularization,
-                iterations=model.iterations,
-                random_state=model.random_state,
-            )
-            model.model.user_factors = payload["user_factors"]
-            model.model.item_factors = payload["item_factors"]
+            try:
+                model.model = AlternatingLeastSquares(
+                    factors=model.factors,
+                    regularization=model.regularization,
+                    iterations=model.iterations,
+                    random_state=model.random_state,
+                )
+                model.model.user_factors = model.user_factors_
+                model.model.item_factors = model.item_factors_
+            except Exception:
+                model.model = None
         model.user_item_csr_ = payload["user_item_csr_"]
         model.id_builder_ = id_builder
         model.is_fitted = True
