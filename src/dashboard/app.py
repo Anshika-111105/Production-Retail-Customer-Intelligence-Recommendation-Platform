@@ -25,7 +25,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Custom Styling
 st.markdown("""
 <style>
     .main-header {
@@ -105,24 +104,24 @@ def load_all_artifacts():
 engine, cust_df, prod_df, eval_df, ablation_df, seg_eval_df, seg_profiles_df, dq_report = load_all_artifacts()
 
 # Sidebar Navigation
-st.sidebar.markdown("## 🧭 Navigation")
+st.sidebar.markdown("## Navigation")
 page = st.sidebar.radio(
     "Select Module:",
     [
-        "🛍️ Customer Recommendations",
-        "📦 Product & Content Explorer",
-        "👥 Customer Segmentation",
-        "📊 Model Evaluation & Ablation",
-        "🛡️ Data Quality & Architecture",
+        "Customer Recommendations",
+        "Product & Content Explorer",
+        "Customer Segmentation",
+        "Model Evaluation & Ablation",
+        "Data Quality & Architecture",
     ]
 )
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("### ⚙️ System Status")
+st.sidebar.markdown("### System Status")
 if engine is not None and engine.id_builder is not None:
-    st.sidebar.success("✅ Models Loaded: Production Ready")
-    st.sidebar.caption(f"👥 Catalog Customers: {len(cust_df):,}")
-    st.sidebar.caption(f"📦 Catalog Products: {len(prod_df):,}")
+    st.sidebar.success("Models Loaded: Production Ready")
+    st.sidebar.caption(f"Catalog Customers: {len(cust_df):,}")
+    st.sidebar.caption(f"Catalog Products: {len(prod_df):,}")
 else:
     st.sidebar.error("⚠️ Artifacts not found. Run pipeline first.")
 
@@ -130,7 +129,7 @@ else:
 # -----------------------------------------------------------------------------
 # PAGE 1: CUSTOMER RECOMMENDATIONS & PROFILE EXPLORER
 # -----------------------------------------------------------------------------
-if page == "🛍️ Customer Recommendations":
+if page == "Customer Recommendations":
     st.markdown('<div class="main-header">Personalized Recommendation Engine</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-header">Multi-strategy candidate generation, hybrid ranking, and explainable product recommendations.</div>', unsafe_allow_html=True)
 
@@ -166,7 +165,7 @@ if page == "🛍️ Customer Recommendations":
     cust_row = cust_df[cust_df["customer_id"] == cust_choice]
     is_cold = cust_row.empty
 
-    st.markdown(f"### 👤 Customer Profile: `ID #{cust_choice}`")
+    st.markdown(f"### Customer Profile: `ID #{cust_choice}`")
     
     if not is_cold:
         r = cust_row.iloc[0]
@@ -193,7 +192,7 @@ if page == "🛍️ Customer Recommendations":
 
     rec_result = engine.recommend(customer_id=cust_choice, n=top_n, context=context)
 
-    st.markdown(f"### 🎯 Recommendations (`Strategy: {rec_result['recommendation_type'].upper()}`)")
+    st.markdown(f"### Recommendations (`Strategy: {rec_result['recommendation_type'].upper()}`)")
     st.caption(f"Engine routed to: **{rec_result['recommendation_type']}** | Customer Segment: **{rec_result['segment_label']}**")
 
     recs = rec_result["recommendations"]
@@ -227,7 +226,7 @@ if page == "🛍️ Customer Recommendations":
 # -----------------------------------------------------------------------------
 # PAGE 2: PRODUCT & CONTENT EXPLORER
 # -----------------------------------------------------------------------------
-elif page == "📦 Product & Content Explorer":
+elif page == "Product & Content Explorer":
     st.markdown('<div class="main-header">Product Catalog & Similarity Explorer</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-header">Inspect item collaborative filtering neighbors, content embeddings, and test new product cold-start.</div>', unsafe_allow_html=True)
 
@@ -235,7 +234,7 @@ elif page == "📦 Product & Content Explorer":
         st.warning("Product feature artifacts not found.")
         st.stop()
 
-    tab_explore, tab_cold_prod = st.tabs(["🔍 Explore Catalog Products", "✨ New Product Cold-Start Simulator"])
+    tab_explore, tab_cold_prod = st.tabs(["Explore Catalog Products", "New Product Cold-Start Simulator"])
 
     with tab_explore:
         p_ids = prod_df["product_id"].tolist()
@@ -253,11 +252,11 @@ elif page == "📦 Product & Content Explorer":
         st.caption(f"**Description:** {prod_row['description']}")
         st.markdown("---")
 
-        st.markdown("#### 🔗 Similar Products")
+        st.markdown("#### Similar Products")
         sim_col1, sim_col2 = st.columns(2)
 
         with sim_col1:
-            st.markdown("##### 👥 Collaborative Filtering Neighbors (Item-Item Cosine)")
+            st.markdown("##### Collaborative Filtering Neighbors (Item-Item Cosine)")
             if engine and engine.item_item_model:
                 cf_sims = engine.item_item_model.get_similar_items(selected_prod, n=5)
                 if cf_sims:
@@ -268,7 +267,7 @@ elif page == "📦 Product & Content Explorer":
                     st.info("No collaborative neighbors found (sparse co-interaction).")
 
         with sim_col2:
-            st.markdown("##### 📝 Content-Based Semantic Neighbors (TF-IDF + Metadata)")
+            st.markdown("##### Content-Based Semantic Neighbors (TF-IDF + Metadata)")
             if engine and engine.content_model:
                 content_sims = engine.content_model.get_similar_products(selected_prod, n=5)
                 if content_sims:
@@ -279,7 +278,7 @@ elif page == "📦 Product & Content Explorer":
                     st.info("No content neighbors found.")
 
     with tab_cold_prod:
-        st.markdown("#### 🚀 Simulate Brand New Unseen Product")
+        st.markdown("#### Simulate Brand New Unseen Product")
         st.markdown("When a merchant uploads a new product with zero transactions, content vectorization matches catalog embeddings to recommend it immediately.")
 
         np_c1, np_c2 = st.columns(2)
@@ -308,7 +307,7 @@ elif page == "📦 Product & Content Explorer":
 # -----------------------------------------------------------------------------
 # PAGE 3: CUSTOMER SEGMENTATION
 # -----------------------------------------------------------------------------
-elif page == "👥 Customer Segmentation":
+elif page == "Customer Segmentation":
     st.markdown('<div class="main-header">Customer Segmentation & Behavioral Personas</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-header">Unsupervised K-Means clustering with deterministic, rule-derived behavioral profiles.</div>', unsafe_allow_html=True)
 
@@ -316,7 +315,7 @@ elif page == "👥 Customer Segmentation":
         st.warning("Segment profiles table not found.")
         st.stop()
 
-    st.markdown("### 📊 Discovered Customer Segments Summary")
+    st.markdown("### Discovered Customer Segments Summary")
     st.dataframe(
         seg_profiles_df[[
             "cluster_id", "label", "customer_count", "percentage_of_customers",
@@ -330,7 +329,7 @@ elif page == "👥 Customer Segmentation":
     v_col1, v_col2 = st.columns([1.2, 1])
 
     with v_col1:
-        st.markdown("#### 🗺️ 2D PCA Cluster Projection")
+        st.markdown("#### 2D PCA Cluster Projection")
         pca_img_path = _PROJECT_ROOT / "outputs" / "figures" / "customer_segments_pca.png"
         if pca_img_path.exists():
             st.image(str(pca_img_path), caption="Customer Segments in 2D PCA Dimensionality Reduction Space", use_container_width=True)
@@ -338,12 +337,12 @@ elif page == "👥 Customer Segmentation":
             st.info("PCA visualization plot not found.")
 
     with v_col2:
-        st.markdown("#### 📈 Segment Spend & Frequency Distribution")
+        st.markdown("#### Segment Spend & Frequency Distribution")
         st.bar_chart(
             data=seg_profiles_df.set_index("label")[["avg_monetary_value", "avg_order_value"]],
         )
 
-    st.markdown("### 🏷️ Rule-Derived Persona Interpretations")
+    st.markdown("### Rule-Derived Persona Interpretations")
     for _, s_row in seg_profiles_df.iterrows():
         with st.expander(f"**Segment {s_row['cluster_id']}**: {s_row['label']} ({s_row['customer_count']:,} customers, {s_row['percentage_of_customers']}%)", expanded=True):
             st.markdown(f"""
@@ -358,7 +357,7 @@ elif page == "👥 Customer Segmentation":
 # -----------------------------------------------------------------------------
 # PAGE 4: MODEL EVALUATION & ABLATION
 # -----------------------------------------------------------------------------
-elif page == "📊 Model Evaluation & Ablation":
+elif page == "Model Evaluation & Ablation":
     st.markdown('<div class="main-header">Offline Recommender Evaluation & Ablation Study</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-header">Strict temporal test-set evaluation across ranking accuracy, catalog coverage, diversity, and novelty.</div>', unsafe_allow_html=True)
 
@@ -373,10 +372,10 @@ elif page == "📊 Model Evaluation & Ablation":
     ])
 
     with tab_benchmark:
-        st.markdown("#### 📋 Offline Evaluation Metrics (Temporal Hold-Out Test Set)")
+        st.markdown("#### Offline Evaluation Metrics (Temporal Hold-Out Test Set)")
         st.dataframe(eval_df, use_container_width=True)
 
-        st.markdown("#### 📊 Metric Comparisons")
+        st.markdown("#### Metric Comparisons")
         c1, c2 = st.columns(2)
         with c1:
             st.markdown("##### Ranking Quality (Recall@10 vs NDCG@10)")
@@ -386,7 +385,7 @@ elif page == "📊 Model Evaluation & Ablation":
             st.bar_chart(eval_df.set_index("model")[["catalog_coverage", "diversity@10"]])
 
     with tab_ablation:
-        st.markdown("#### 🔬 Systematic Component Ablation Study")
+        st.markdown("#### Systematic Component Ablation Study")
         st.markdown("Evaluating component combinations demonstrates the exact marginal lift provided by each algorithm.")
         if not ablation_df.empty:
             st.dataframe(ablation_df, use_container_width=True)
@@ -394,7 +393,7 @@ elif page == "📊 Model Evaluation & Ablation":
             st.line_chart(ablation_df.set_index("model")[["recall@20", "catalog_coverage", "ndcg@20"]])
 
     with tab_seg_eval:
-        st.markdown("#### 👥 Segment-Stratified Evaluation")
+        st.markdown("#### Segment-Stratified Evaluation")
         st.markdown("Measuring recommendation performance separately for each customer segment.")
         if not seg_eval_df.empty:
             st.dataframe(seg_eval_df, use_container_width=True)
@@ -404,7 +403,7 @@ elif page == "📊 Model Evaluation & Ablation":
 # -----------------------------------------------------------------------------
 # PAGE 5: DATA QUALITY & ARCHITECTURE
 # -----------------------------------------------------------------------------
-elif page == "🛡️ Data Quality & Architecture":
+elif page == "Data Quality & Architecture":
     st.markdown('<div class="main-header">Data Quality & Architecture Specifications</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-header">Data validation logs, sparsity metrics, and temporal leakage controls.</div>', unsafe_allow_html=True)
 
@@ -415,10 +414,10 @@ elif page == "🛡️ Data Quality & Architecture":
         q3.metric("Total Products", f"{dq_report.get('product_count', 0):,}")
         q4.metric("Interaction Sparsity", f"{dq_report.get('sparsity', 0.0)*100:.3f}%")
 
-        st.markdown("### 📋 Event Distribution")
+        st.markdown("### Event Distribution")
         st.json(dq_report.get("event_distribution", {}))
 
-        st.markdown("### 🔍 Data Cleaning & Filtering Decisions Log")
+        st.markdown("### Data Cleaning & Filtering Decisions Log")
         filtering_log = dq_report.get("filtering_log", [])
         if filtering_log:
             for log_item in filtering_log:
