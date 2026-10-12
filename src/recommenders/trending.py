@@ -36,7 +36,8 @@ class TrendingRecommender(BaseRecommender):
         ref_date = reference_date if reference_date is not None else df["timestamp"].max()
 
         # Age in days
-        age_days = ((ref_date - df["timestamp"]) / pd.Timedelta(days=1)).values
+        diff_td: Any = ref_date - df["timestamp"]
+        age_days = np.asarray(diff_td.dt.total_seconds() / 86400.0)
         age_days = np.clip(age_days, a_min=0.0, a_max=None)
 
         # Decay weights: exp(-lambda * age_days)
@@ -58,10 +59,12 @@ class TrendingRecommender(BaseRecommender):
         else:
             norm_trend = raw_trend / max(1e-4, mx)
 
-        self.trend_scores_ = {
-            int(prod) if str(prod).isdigit() else str(prod): float(score)
-            for prod, score in norm_trend.items()
-        }
+        scores: Dict[Union[int, str], float] = {}
+        for prod, score in norm_trend.items():
+            prod_str = str(prod)
+            prod_key: Union[int, str] = int(prod_str) if prod_str.isdigit() else prod_str
+            scores[prod_key] = float(score)
+        self.trend_scores_ = scores
         sorted_trend = sorted(self.trend_scores_.items(), key=lambda x: x[1], reverse=True)
         self.ranked_products_ = [item[0] for item in sorted_trend]
 
