@@ -1,9 +1,3 @@
-"""Streamlit Community Cloud root entry point.
-
-Delegates execution to src/dashboard/app.py for seamless deployment
-on Streamlit Community Cloud (share.streamlit.io).
-"""
-
 import sys
 from pathlib import Path
 import runpy
